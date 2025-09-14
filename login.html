@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - NotesApp</title>
+    <script src="[https://cdn.tailwindcss.com](https://cdn.tailwindcss.com)"></script>
+    <link rel="preconnect" href="[https://rsms.me/](https://rsms.me/)">
+    <link rel="stylesheet" href="[https://rsms.me/inter/inter.css](https://rsms.me/inter/inter.css)">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #111827; /* gray-900 */
+        }
+        .hero-bg {
+            background-image: radial-gradient(circle at 1px 1px, #4b5563, #111827);
+            background-size: 1.5rem 1.5rem;
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            z-index: -1;
+        }
+        .form-container {
+            animation: fade-in-up 0.6s ease-out forwards;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+        @keyframes fade-in-up {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="text-gray-800">
+    <div class="hero-bg"></div>
+
+    <div class="min-h-screen flex flex-col items-center justify-center p-4">
+        <a href="index.html" class="flex items-center mb-8">
+            <svg class="h-10 w-10 text-blue-400 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 7l6 6-6 6M21 7l-6 6 6 6"></path>
+            </svg>
+            <span class="text-4xl font-bold text-white">NotesApp</span>
+        </a>
+        <div class="w-full max-w-md form-container bg-white/10 p-8 rounded-2xl shadow-xl">
+            <div class="bg-white p-8 rounded-xl shadow-inner">
+                <h2 class="text-2xl font-bold text-center text-gray-800 mb-2">Welcome Back</h2>
+                <p class="text-center text-gray-500 mb-8">Sign in to your workspace.</p>
+                <form id="login-form">
+                    <div class="mb-4">
+                        <label for="email" class="block text-gray-700 text-sm font-bold mb-2">Email Address</label>
+                        <input type="email" id="email" required class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="e.g., user@acme.test">
+                    </div>
+                    <div class="mb-6">
+                        <label for="password" class="block text-gray-700 text-sm font-bold mb-2">Password</label>
+                        <input type="password" id="password" required class="w-full p-3 border border-gray-300 rounded-lg mb-3 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="password">
+                    </div>
+                    <p id="login-error" class="text-red-500 text-xs italic mb-4 text-center h-4"></p>
+                    <button id="submit-button" type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg focus:outline-none focus:shadow-outline transition-colors duration-200 disabled:opacity-50">
+                        Sign In
+                    </button>
+                </form>
+            </div>
+             <p class="text-center text-gray-300 text-sm mt-6">
+                Don't have an account? <a href="get-started.html" class="text-blue-400 hover:underline">Get Started</a>
+            </p>
+        </div>
+    </div>
+    <script>
+        const loginForm = document.getElementById('login-form');
+        const emailInput = document.getElementById('email');
+        const passwordInput = document.getElementById('password');
+        const loginError = document.getElementById('login-error');
+        const submitButton = document.getElementById('submit-button');
+
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            loginError.textContent = '';
+            submitButton.disabled = true;
+            submitButton.textContent = 'Signing In...';
+            try {
+                const response = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: emailInput.value, password: passwordInput.value })
+                });
+                const data = await response.json();
+                if (response.ok) {
+                    localStorage.setItem('saas_token', data.token);
+                    localStorage.setItem('saas_user', JSON.stringify(data.user));
+                    window.location.href = 'dashboard.html';
+                } else {
+                    throw new Error(data.error || 'Login failed.');
+                }
+            } catch (error) {
+                loginError.textContent = error.message;
+            } finally {
+                submitButton.disabled = false;
+                submitButton.textContent = 'Sign In';
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - NotesApp</title>
+    <script src="[https://cdn.tailwindcss.com](https://cdn.tailwindcss.com)"></script>
+    <link rel="preconnect" href="[https://rsms.me/](https://rsms.me/)">
+    <link rel="stylesheet" href="[https://rsms.me/inter/inter.css](https://rsms.me/inter/inter.css)">
+    <style>
+        body { 
+            font-family: 'Inter', sans-serif;
+            background-color: #111827; /* gray-900 */
+        }
+        .main-bg {
+            background-image: radial-gradient(circle at 1px 1px, #4b5563, #111827);
+            background-size: 1.5rem 1.5rem;
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            z-index: -1;
+        }
+        .sidebar { transition: transform 0.3s ease-in-out; }
+        @media (max-width: 768px) {
+            .sidebar { transform: translateX(-100%); }
+            .sidebar.open { transform: translateX(0); }
+        }
+        .skeleton-card {
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 0.75rem;
+            animation: pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: .5; }
+        }
+        .fade-in-up {
+            animation: fade-in-up-anim 0.5s ease-out forwards;
+            opacity: 0;
+        }
+        @keyframes fade-in-up-anim {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .toast {
+            position: fixed; bottom: 20px; right: 20px;
+            transform: translateX(120%);
+            transition: transform 0.5s ease-in-out;
+            z-index: 100;
+        }
+        .toast.show {
+            transform: translateX(0);
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+    </style>
+</head>
+<body class="text-gray-200">
+
+    <div class="flex h-screen overflow-hidden">
+        <!-- Sidebar -->
+        <aside class="sidebar fixed inset-y-0 left-0 z-30 w-64 bg-gray-900/80 text-white p-6 flex flex-col md:flex md:static md:translate-x-0 backdrop-filter backdrop-blur-lg border-r border-gray-700">
+             <a href="index.html" class="flex items-center mb-12">
+                <svg class="h-8 w-8 text-blue-400 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7l6 6-6 6M21 7l-6 6 6 6"></path></svg>
+                <h1 class="text-2xl font-bold">NotesApp</h1>
+            </a>
+            <nav class="flex-grow">
+                <a href="#" class="flex items-center py-2.5 px-4 bg-gray-700/50 rounded-lg text-white">
+                    <svg class="h-5 w-5 mr-3" viewBox="0 0 20 20" fill="currentColor"><path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"></path></svg>
+                    Dashboard
+                </a>
+            </nav>
+            <div class="mt-auto">
+                <button id="logout-button" class="w-full flex items-center py-2 px-4 text-gray-400 hover:bg-gray-700/50 hover:text-white rounded-lg transition-colors">
+                    <svg class="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+                    Logout
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <div class="flex-1 flex flex-col overflow-hidden relative">
+            <div class="main-bg"></div>
+            <header class="flex justify-between items-center p-4 bg-gray-900/50 backdrop-filter backdrop-blur-lg border-b border-gray-700 z-10">
+                <button id="menu-toggle" class="md:hidden text-gray-300">
+                    <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+                </button>
+                <div id="user-info" class="flex items-center ml-auto"></div>
+            </header>
+
+            <main class="flex-1 overflow-x-hidden overflow-y-auto p-6">
+                <div class="max-w-7xl mx-auto">
+                    <div class="mb-8">
+                        <h2 class="text-3xl font-bold text-white mb-2 fade-in-up">Hello, <span id="user-name"></span>!</h2>
+                        <p class="text-gray-400 fade-in-up" style="animation-delay: 0.1s;">Welcome to your <span id="tenant-name" class="font-semibold text-gray-200"></span> workspace.</p>
+                    </div>
+
+                    <!-- Stats -->
+                    <div id="stats-section" class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 fade-in-up" style="animation-delay: 0.2s;">
+                        <div class="glass-card p-6 rounded-xl flex items-center">
+                            <div class="p-3 rounded-full bg-blue-500/20 mr-4"><svg class="h-6 w-6 text-blue-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg></div>
+                            <div>
+                                <p class="text-sm text-gray-400">Total Notes</p>
+                                <p id="total-notes-stat" class="text-2xl font-bold text-white">0</p>
+                            </div>
+                        </div>
+                         <div class="glass-card p-6 rounded-xl flex items-center">
+                            <div class="p-3 rounded-full bg-green-500/20 mr-4"><svg class="h-6 w-6 text-green-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v.01"></path></svg></div>
+                            <div>
+                                <p class="text-sm text-gray-400">Subscription Plan</p>
+                                <p id="plan-stat" class="text-2xl font-bold text-white">Free</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="note-creator" class="glass-card p-6 rounded-xl mb-8 fade-in-up" style="animation-delay: 0.3s;">
+                         <h3 class="text-xl font-bold text-white mb-4">Create a New Note</h3>
+                         <form id="note-form">
+                            <input type="text" id="note-title" placeholder="Note Title" required class="w-full p-3 bg-gray-800/50 border border-gray-600 rounded-lg mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500 text-white">
+                            <textarea id="note-content" placeholder="Start writing your thoughts..." rows="4" required class="w-full p-3 bg-gray-800/50 border border-gray-600 rounded-lg mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500 text-white"></textarea>
+                            <button type="submit" id="create-note-button" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-5 rounded-lg transition-colors disabled:opacity-50">Create Note</button>
+                        </form>
+                         <div id="upgrade-notice" class="hidden mt-4 p-4 bg-yellow-500/20 text-yellow-300 rounded-lg flex items-center justify-between">
+                            <span>You've reached the 3-note limit for your plan.</span>
+                            <button id="upgrade-button" class="bg-green-500 hover:bg-green-600 text-white font-bold px-4 py-2 rounded-md hidden">Upgrade to Pro</button>
+                        </div>
+                    </div>
+
+                    <h3 class="text-2xl font-bold text-white mb-4 fade-in-up" style="animation-delay: 0.4s;">Your Notes</h3>
+                    <div id="notes-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+                    
+                    <!-- ADMIN PANEL -->
+                    <div id="admin-panel" class="hidden mt-12 fade-in-up" style="animation-delay: 0.5s;">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="text-2xl font-bold text-white">Team Management</h3>
+                            <button class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg flex items-center">
+                                <svg class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path></svg>
+                                Invite User
+                            </button>
+                        </div>
+                        <div class="glass-card rounded-xl overflow-hidden">
+                            <table class="min-w-full divide-y divide-gray-700">
+                                <thead class="bg-gray-800/50">
+                                    <tr>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">User</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Role</th>
+                                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-400 uppercase tracking-wider">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="user-list" class="divide-y divide-gray-700"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+    
+    <!-- Toast -->
+    <div id="toast" class="toast bg-gray-200 text-gray-900 font-semibold py-3 px-5 rounded-lg shadow-xl">
+        <p id="toast-message"></p>
+    </div>
+
+    <script>
+        const token = localStorage.getItem('saas_token');
+        if (!token) { window.location.href = 'login.html'; }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            let user = JSON.parse(localStorage.getItem('saas_user'));
+            let notes = [];
+            let tenantUsers = [];
+
+            const api = {
+                getNotes: async () => {
+                    const response = await fetch('/api/notes', { headers: { 'Authorization': `Bearer ${token}` } });
+                    if (!response.ok) throw new Error('Failed to fetch notes');
+                    return await response.json();
+                },
+                getUsers: async () => {
+                    const response = await fetch('/api/users', { headers: { 'Authorization': `Bearer ${token}` } });
+                     if (!response.ok) throw new Error('Failed to fetch users');
+                    return await response.json();
+                },
+                updateUserRole: async (email, role) => {
+                     const response = await fetch('/api/users/role', { 
+                        method: 'POST', 
+                        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ email, role })
+                    });
+                     if (!response.ok) throw new Error('Failed to update role');
+                    return await response.json();
+                },
+                 createNote: async (title, content) => {
+                    await fetch('/api/notes', { method: 'POST', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ title, content }) });
+                },
+                deleteNote: async (id) => {
+                     await fetch(`/api/notes/${id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
+                },
+                upgrade: async () => {
+                    await fetch('/api/tenants/upgrade', { method: 'POST', headers: { 'Authorization': `Bearer ${token}` } });
+                }
+            };
+
+            const UIElements = {
+                sidebar: document.querySelector('.sidebar'),
+                menuToggle: document.getElementById('menu-toggle'),
+                userInfo: document.getElementById('user-info'),
+                userName: document.getElementById('user-name'),
+                tenantName: document.getElementById('tenant-name'),
+                noteForm: document.getElementById('note-form'),
+                createNoteBtn: document.getElementById('create-note-button'),
+                notesList: document.getElementById('notes-list'),
+                upgradeNotice: document.getElementById('upgrade-notice'),
+                upgradeBtn: document.getElementById('upgrade-button'),
+                logoutBtn: document.getElementById('logout-button'),
+                totalNotesStat: document.getElementById('total-notes-stat'),
+                planStat: document.getElementById('plan-stat'),
+                adminPanel: document.getElementById('admin-panel'),
+                userList: document.getElementById('user-list'),
+            };
+
+            const showToast = (message) => {
+                const toast = document.getElementById('toast');
+                const toastMessage = document.getElementById('toast-message');
+                toastMessage.textContent = message;
+                toast.classList.add('show');
+                setTimeout(() => toast.classList.remove('show'), 3000);
+            };
+
+            const renderUsers = () => {
+                UIElements.userList.innerHTML = tenantUsers.map(u => `
+                    <tr class="hover:bg-gray-800/50">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center">
+                                <div class="w-10 h-10 rounded-full bg-blue-500/20 text-blue-300 flex items-center justify-center font-bold">
+                                    ${u.email.charAt(0).toUpperCase()}
+                                </div>
+                                <div class="ml-4">
+                                    <div class="text-sm font-medium text-white">${u.email}</div>
+                                    <div class="text-sm text-gray-400">${u.tenant}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <select data-user-email="${u.email}" class="role-select bg-gray-700 border-gray-600 text-white rounded-md shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50" ${user.email === u.email ? 'disabled' : ''}>
+                                <option value="MEMBER" ${u.role === 'MEMBER' ? 'selected' : ''}>Member</option>
+                                <option value="ADMIN" ${u.role === 'ADMIN' ? 'selected' : ''}>Admin</option>
+                            </select>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                            ${user.email !== u.email ? `<button data-user-email="${u.email}" class="remove-user-button text-red-500 hover:text-red-400">Remove</button>` : '<span class="text-gray-500">You</span>'}
+                        </td>
+                    </tr>
+                `).join('');
+            };
+            
+            const renderNotes = () => {
+                if (notes.length === 0) {
+                     UIElements.notesList.innerHTML = `<div class="col-span-full text-center py-12 glass-card rounded-xl fade-in-up">
+                        <svg class="mx-auto h-12 w-12 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                        <h3 class="mt-2 text-sm font-medium text-gray-200">No notes yet</h3>
+                        <p class="mt-1 text-sm text-gray-400">Get started by creating a new note.</p>
+                    </div>`;
+                    return;
+                }
+                UIElements.notesList.innerHTML = notes.slice().reverse().map((note, index) => `
+                    <div class="glass-card p-6 rounded-xl flex flex-col justify-between transition-all duration-300 hover:border-gray-500 hover:-translate-y-1 fade-in-up" style="animation-delay: ${index * 0.05}s">
+                        <div>
+                            <h4 class="font-bold text-lg mb-2 break-words text-white">${note.title}</h4>
+                            <p class="text-gray-300 text-sm mb-4 break-words" style="display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;">${note.content}</p>
+                        </div>
+                        <div class="flex justify-between items-center text-xs text-gray-400 mt-4">
+                            <span class="truncate pr-2">${new Date(note.id).toLocaleDateString()}</span>
+                            <button data-note-id="${note.id}" class="delete-button p-2 rounded-full hover:bg-red-500/20">
+                                <svg class="h-5 w-5 text-gray-400 hover:text-red-400 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                            </button>
+                        </div>
+                    </div>
+                `).join('');
+            };
+
+            const renderSkeletons = () => {
+                UIElements.notesList.innerHTML = Array(3).fill('').map(() => `<div class="skeleton-card h-48"></div>`).join('');
+            };
+
+            const render = () => {
+                renderNotes();
+                UIElements.totalNotesStat.textContent = notes.length;
+                UIElements.planStat.textContent = user.tenantPlan;
+                UIElements.planStat.className = `text-2xl font-bold capitalize ${user.tenantPlan === 'PRO' ? 'text-green-300' : 'text-white'}`;
+                const isLimitReached = user.tenantPlan === 'FREE' && notes.length >= 3;
+                UIElements.createNoteBtn.disabled = isLimitReached;
+                UIElements.noteForm.querySelector('#note-title').disabled = isLimitReached;
+                UIElements.noteForm.querySelector('#note-content').disabled = isLimitReached;
+                UIElements.upgradeNotice.classList.toggle('hidden', !isLimitReached);
+                UIElements.upgradeBtn.classList.toggle('hidden', user.role !== 'ADMIN' || !isLimitReached);
+            };
+
+            const refreshData = async () => {
+                renderSkeletons();
+                try {
+                    notes = await api.getNotes();
+                    if (user.role === 'ADMIN') {
+                        tenantUsers = await api.getUsers();
+                        renderUsers();
+                    }
+                    render();
+                } catch (error) {
+                    if (error.message.includes('401')) { localStorage.clear(); window.location.href = 'login.html'; }
+                }
+            };
+            
+            UIElements.noteForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const title = e.target.querySelector('#note-title').value;
+                const content = e.target.querySelector('#note-content').value;
+                await api.createNote(title, content);
+                e.target.reset();
+                await refreshData();
+            });
+
+            UIElements.notesList.addEventListener('click', async (e) => {
+                const deleteButton = e.target.closest('.delete-button');
+                if(deleteButton) {
+                    const noteId = deleteButton.dataset.noteId;
+                    if (confirm('Are you sure you want to delete this note?')) {
+                        await api.deleteNote(noteId);
+                        await refreshData();
+                    }
+                }
+            });
+
+            UIElements.upgradeBtn.addEventListener('click', async () => {
+                await api.upgrade();
+                user.tenantPlan = 'PRO';
+                localStorage.setItem('saas_user', JSON.stringify(user));
+                await refreshData();
+                showToast('Upgraded to Pro!');
+            });
+            
+            UIElements.userList.addEventListener('change', async (e) => {
+                if (e.target.classList.contains('role-select')) {
+                    const userEmail = e.target.dataset.userEmail;
+                    const newRole = e.target.value;
+                    try {
+                        await api.updateUserRole(userEmail, newRole);
+                        showToast(`Role for ${userEmail} updated to ${newRole}.`);
+                        tenantUsers = await api.getUsers();
+                        renderUsers();
+                    } catch (error) {
+                        showToast('Failed to update role.');
+                    }
+                }
+            });
+
+            UIElements.logoutBtn.addEventListener('click', () => { localStorage.clear(); window.location.href = 'login.html'; });
+            UIElements.menuToggle.addEventListener('click', () => UIElements.sidebar.classList.toggle('open'));
+
+            const init = async () => {
+                UIElements.userName.textContent = user.email.split('@')[0];
+                UIElements.tenantName.textContent = user.tenant;
+                const userInitial = user.email.charAt(0).toUpperCase();
+                UIElements.userInfo.innerHTML = `
+                    <span class="hidden md:inline text-gray-300 mr-3">${user.email} (${user.role})</span>
+                    <div class="w-10 h-10 rounded-full bg-blue-500/20 text-blue-300 flex items-center justify-center font-bold text-lg">
+                        ${userInitial}
+                    </div>`;
+                
+                await refreshData();
+                if (user.role === 'ADMIN') {
+                    UIElements.adminPanel.classList.remove('hidden');
+                }
+            };
+
+            init();
+        });
+    </script>
+</body>
+</html>

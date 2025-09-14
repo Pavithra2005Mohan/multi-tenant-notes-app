@@ -1,0 +1,57 @@
+{
+    "tenants": [
+      {
+        "name": "Acme Corporation",
+        "slug": "acme",
+        "plan": "FREE"
+      },
+      {
+        "name": "Globex Inc.",
+        "slug": "globex",
+        "plan": "FREE"
+      }
+    ],
+    "users": [
+      {
+        "email": "admin@acme.test",
+        "password": "password",
+        "role": "ADMIN",
+        "tenant": "acme"
+      },
+      {
+        "email": "user@acme.test",
+        "password": "password",
+        "role": "MEMBER",
+        "tenant": "acme"
+      },
+      {
+        "email": "admin@globex.test",
+        "password": "password",
+        "role": "ADMIN",
+        "tenant": "globex"
+      },
+      {
+        "email": "user@globex.test",
+        "password": "password",
+        "role": "MEMBER",
+        "tenant": "globex"
+      }
+    ],
+    "notes": [
+      {
+        "id": 1678886400000,
+        "title": "Welcome to Acme!",
+        "content": "This is the first note for the Acme Corporation workspace.",
+        "author": "admin@acme.test",
+        "tenant": "acme"
+      },
+      {
+        "id": 1678886400001,
+        "title": "Q1 Project Goals",
+        "content": "Review the project goals for the first quarter.",
+        "author": "user@acme.test",
+        "tenant": "acme"
+      }
+    ]
+  }
+  
